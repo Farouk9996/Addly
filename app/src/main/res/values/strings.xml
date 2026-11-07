@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">LearnBridge</string>
+    <string name="tagline">بوابتك التعليمية الذكية لمنصات مودل والجامعات</string>
+    <string name="add_portal">إضافة بوابة جديدة</string>
+    <string name="portal_name">اسم البوابة أو الجامعة</string>
+    <string name="portal_url">رابط الموقع (URL)</string>
+    <string name="portal_institution">المؤسسة / الكلية (اختياري)</string>
+    <string name="portal_username">اسم المستخدم / الرقم الجامعي (اختياري)</string>
+    <string name="save">حفظ</string>
+    <string name="cancel">إلغاء</string>
+    <string name="delete">حذف</string>
+    <string name="edit">تعديل</string>
+    <string name="open_portal">فتح البوابة</string>
+    <string name="my_portals">بواباتي التعليمية</string>
+    <string name="featured_portals">بوابات مقترحة</string>
+    <string name="downloads">الملفات والمقررات</string>
+    <string name="notes_and_tasks">الملاحظات والمهام</string>
+    <string name="browser_mode_desktop">وضع سطح المكتب</string>
+    <string name="browser_mode_mobile">وضع الهاتف</string>
+    <string name="night_mode">الوضع الليلي للصفحة</string>
+    <string name="clear_browsing_data">مسح بيانات التصفح</string>
+    <string name="share_url">مشاركة الرابط</string>
+    <string name="copy_url">نسخ الرابط</string>
+    <string name="search_or_enter_url">ابحث أو أدخل رابط المنصة…</string>
+    <string name="no_portals_yet">لم تقم بإضافة بوابات تعليمية بعد</string>
+    <string name="add_first_portal_hint">أضف رابط مودل جامعتك أو اختر من البوابات المقترحة للبدء السريع</string>
+</resources>

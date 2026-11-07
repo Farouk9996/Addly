@@ -1,0 +1,6 @@
+{
+  "name": "LearnBridge",
+  "description": "تطبيق وسيط متطور لفتح وإدارة بوابات مودل (Moodle) والمنصات التعليمية والمواقع الجامعية مع متصفح مدمج وملاحظات وتنزيلات المقررات",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
