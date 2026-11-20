@@ -14,6 +14,9 @@ import com.example.data.model.CourseNoteEntity
 import com.example.data.model.DownloadedFileEntity
 import com.example.data.model.NotificationItem
 import com.example.data.model.PortalEntity
+import android.app.Activity
+import com.example.data.firebase.FirestoreSyncService
+import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -55,6 +58,32 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
     private val repository: PortalRepository
     private val authPrefs = application.getSharedPreferences("moodle_auth_prefs", Context.MODE_PRIVATE)
 
+    val syncService = FirestoreSyncService(application)
+    val firebaseUser: StateFlow<FirebaseUser?> = syncService.currentUser
+    val isCloudSyncing: StateFlow<Boolean> = syncService.isSyncing
+    val cloudSyncMessage: StateFlow<String?> = syncService.syncMessage
+
+    private val _currentScreen = MutableStateFlow(AppScreen.DASHBOARD)
+    val currentScreen: StateFlow<AppScreen> = _currentScreen.asStateFlow()
+
+    private val _browserState = MutableStateFlow(BrowserUiState())
+    val browserState: StateFlow<BrowserUiState> = _browserState.asStateFlow()
+
+    private val _editingPortal = MutableStateFlow<PortalEntity?>(null)
+    val editingPortal: StateFlow<PortalEntity?> = _editingPortal.asStateFlow()
+
+    private val _showAddPortalDialog = MutableStateFlow(false)
+    val showAddPortalDialog: StateFlow<Boolean> = _showAddPortalDialog.asStateFlow()
+
+    private val _showAddBookmarkDialog = MutableStateFlow(false)
+    val showAddBookmarkDialog: StateFlow<Boolean> = _showAddBookmarkDialog.asStateFlow()
+
+    private val _showAccountSheet = MutableStateFlow(false)
+    val showAccountSheet: StateFlow<Boolean> = _showAccountSheet.asStateFlow()
+
+    private val _isReorderMode = MutableStateFlow(false)
+    val isReorderMode: StateFlow<Boolean> = _isReorderMode.asStateFlow()
+
     init {
         val database = AppDatabase.getInstance(application)
         repository = PortalRepository(database.portalDao())
@@ -86,27 +115,6 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
     val notes: StateFlow<List<CourseNoteEntity>> = repository.allNotes
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private val _currentScreen = MutableStateFlow(AppScreen.DASHBOARD)
-    val currentScreen: StateFlow<AppScreen> = _currentScreen.asStateFlow()
-
-    private val _browserState = MutableStateFlow(BrowserUiState())
-    val browserState: StateFlow<BrowserUiState> = _browserState.asStateFlow()
-
-    private val _editingPortal = MutableStateFlow<PortalEntity?>(null)
-    val editingPortal: StateFlow<PortalEntity?> = _editingPortal.asStateFlow()
-
-    private val _showAddPortalDialog = MutableStateFlow(false)
-    val showAddPortalDialog: StateFlow<Boolean> = _showAddPortalDialog.asStateFlow()
-
-    private val _showAddBookmarkDialog = MutableStateFlow(false)
-    val showAddBookmarkDialog: StateFlow<Boolean> = _showAddBookmarkDialog.asStateFlow()
-
-    private val _showAccountSheet = MutableStateFlow(false)
-    val showAccountSheet: StateFlow<Boolean> = _showAccountSheet.asStateFlow()
-
-    private val _isReorderMode = MutableStateFlow(false)
-    val isReorderMode: StateFlow<Boolean> = _isReorderMode.asStateFlow()
-
     // Sample Moodle notifications inspired by screenshots
     private val _notifications = MutableStateFlow(
         listOf(
@@ -116,7 +124,8 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
                 sender = "بوابة مودل المركزية",
                 timeAgo = "منذ 12 يوماً",
                 isUnread = true,
-                initials = "FD"
+                initials = "FD",
+                targetUrl = "https://ead.univ-mosta.dz/fdsp/my/"
             ),
             NotificationItem(
                 id = "2",
@@ -124,7 +133,8 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
                 sender = "أستاذ المادة - د. بن قتات",
                 timeAgo = "منذ 16 يوماً",
                 isUnread = true,
-                initials = "AI"
+                initials = "AI",
+                targetUrl = "https://mast-da.ufc.dz/s1/mod/forum/index.php?id=1"
             ),
             NotificationItem(
                 id = "3",
@@ -132,7 +142,8 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
                 sender = "AICHA DOUIDI",
                 timeAgo = "منذ 5 أشهر",
                 isUnread = true,
-                initials = "AD"
+                initials = "AD",
+                targetUrl = "https://mast-da.ufc.dz/s1/my/courses.php"
             ),
             NotificationItem(
                 id = "4",
@@ -140,7 +151,8 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
                 sender = "amina touaoula",
                 timeAgo = "منذ 5 أشهر",
                 isUnread = true,
-                initials = "AT"
+                initials = "AT",
+                targetUrl = "https://mast-da.ufc.dz/s1/course/index.php"
             ),
             NotificationItem(
                 id = "5",
@@ -148,11 +160,18 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
                 sender = "BENAZZOUZ Bensabeur",
                 timeAgo = "منذ 5 أشهر",
                 isUnread = true,
-                initials = "BB"
+                initials = "BB",
+                targetUrl = "https://ead.univ-mosta.dz/fdsp/course/index.php"
             )
         )
     )
     val notifications: StateFlow<List<NotificationItem>> = _notifications.asStateFlow()
+
+    fun markNotificationRead(id: String) {
+        _notifications.update { list ->
+            list.map { if (it.id == id) it.copy(isUnread = false) else it }
+        }
+    }
 
     fun navigateTo(screen: AppScreen) {
         _currentScreen.value = screen
@@ -307,18 +326,37 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun navigateToMoodleShortcut(shortcutPath: String) {
-        val current = _browserState.value.currentUrl
-        if (current.isBlank()) return
+        val current = if (_browserState.value.currentUrl.isNotBlank()) {
+            _browserState.value.currentUrl
+        } else {
+            _browserState.value.activePortal?.url ?: "https://mast-da.ufc.dz/s1/"
+        }
 
         try {
             val uri = android.net.Uri.parse(current)
             val scheme = uri.scheme ?: "https"
-            val host = uri.host ?: return
+            val host = uri.host ?: "mast-da.ufc.dz"
             val port = if (uri.port != -1) ":${uri.port}" else ""
+            val segments = uri.pathSegments
+            val basePath = if (segments.isNotEmpty() && (segments[0] == "s1" || segments[0] == "fdsp")) {
+                "/${segments[0]}"
+            } else {
+                ""
+            }
             val cleanPath = if (shortcutPath.startsWith("/")) shortcutPath else "/$shortcutPath"
-            val newUrl = "$scheme://$host$port$cleanPath"
-            _browserState.update { it.copy(currentUrl = newUrl, isLoading = true, progress = 0) }
-        } catch (_: Exception) {}
+            val newUrl = "$scheme://$host$port$basePath$cleanPath"
+            _browserState.update {
+                it.copy(
+                    currentUrl = newUrl,
+                    pageTitle = "بوابة التعليم",
+                    isLoading = true,
+                    progress = 0
+                )
+            }
+            _currentScreen.value = AppScreen.BROWSER
+        } catch (_: Exception) {
+            openCustomUrl("https://mast-da.ufc.dz/s1$shortcutPath", "بوابة التعليم")
+        }
     }
 
     // Portal CRUD
@@ -503,5 +541,27 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
         try {
             CookieManager.getInstance().flush()
         } catch (_: Exception) {}
+    }
+
+    // Firebase Auth & Cloud Sync
+    fun signInWithGoogle(activity: Activity) {
+        syncService.signInWithGoogle(activity, viewModelScope, onSuccess = {
+            syncWithCloud()
+        })
+    }
+
+    fun signOutGoogle() {
+        syncService.signOut(viewModelScope)
+    }
+
+    fun syncWithCloud() {
+        viewModelScope.launch {
+            syncService.syncUserData(
+                stayLoggedIn = _browserState.value.isStayLoggedInEnabled,
+                portals = portals.value,
+                bookmarks = bookmarks.value,
+                downloads = downloads.value
+            )
+        }
     }
 }

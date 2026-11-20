@@ -91,7 +91,14 @@ fun NotificationsScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { },
+                        .clickable {
+                            viewModel.markNotificationRead(item.id)
+                            viewModel.openCustomUrl(
+                                inputUrl = item.targetUrl.ifBlank { "https://mast-da.ufc.dz/s1/my/" },
+                                title = item.title
+                            )
+                        }
+                        .testTag("notification_item_${item.id}"),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF242424))
                 ) {

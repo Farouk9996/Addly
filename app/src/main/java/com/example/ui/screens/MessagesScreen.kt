@@ -61,10 +61,14 @@ fun MessagesScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                IconButton(onClick = { }) {
+                IconButton(onClick = {
+                    viewModel.openCustomUrl("https://mast-da.ufc.dz/s1/user/preferences.php", "إعدادات الحساب والرسائل")
+                }) {
                     Icon(Icons.Default.Settings, contentDescription = "إعدادات", tint = Color.White)
                 }
-                IconButton(onClick = { }) {
+                IconButton(onClick = {
+                    viewModel.openCustomUrl("https://mast-da.ufc.dz/s1/message/index.php", "البحث في الرسائل")
+                }) {
                     Icon(Icons.Default.Search, contentDescription = "بحث", tint = Color.White)
                 }
             }
@@ -79,7 +83,13 @@ fun MessagesScreen(
 
         // جهات اتصال Header
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .clickable {
+                    viewModel.openCustomUrl("https://mast-da.ufc.dz/s1/message/contacts.php", "جهات الاتصال الأكاديمية")
+                }
+                .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -102,7 +112,13 @@ fun MessagesScreen(
 
         // المميزة (1)
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .clickable {
+                    viewModel.openCustomUrl("https://mast-da.ufc.dz/s1/message/index.php", "الرسائل المميزة")
+                }
+                .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -129,7 +145,7 @@ fun MessagesScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    viewModel.navigateToMoodleShortcut("/message/index.php")
+                    viewModel.openCustomUrl("https://mast-da.ufc.dz/s1/message/index.php", "محادثات مودل المباشرة")
                 },
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF242424))
@@ -181,7 +197,9 @@ fun MessagesScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(8.dp))
-                .clickable { }
+                .clickable {
+                    viewModel.openCustomUrl("https://mast-da.ufc.dz/s1/message/index.php?view=group", "مجموعات المقاييس")
+                }
                 .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -208,7 +226,9 @@ fun MessagesScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(8.dp))
-                .clickable { }
+                .clickable {
+                    viewModel.openCustomUrl("https://mast-da.ufc.dz/s1/message/index.php?view=private", "الرسائل الخاصة")
+                }
                 .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically

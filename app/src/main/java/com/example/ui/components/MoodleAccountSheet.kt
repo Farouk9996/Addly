@@ -63,9 +63,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
+import android.app.Activity
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import com.example.ui.PortalViewModel
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoodleAccountSheet(
+    viewModel: PortalViewModel,
     onDismiss: () -> Unit,
     onOpenUrl: (String, String) -> Unit = { _, _ -> },
     onNavigateShortcut: (String) -> Unit,
@@ -79,6 +89,12 @@ fun MoodleAccountSheet(
 
     val ufcLoginUrl = "https://mast-da.ufc.dz/s1/login/index.php"
     val mostaUrl = "https://ead.univ-mosta.dz/fdsp"
+
+    val firebaseUser by viewModel.firebaseUser.collectAsState()
+    val isCloudSyncing by viewModel.isCloudSyncing.collectAsState()
+    val syncMessage by viewModel.cloudSyncMessage.collectAsState()
+    val context = LocalContext.current
+    val activity = context as? Activity
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -110,11 +126,172 @@ fun MoodleAccountSheet(
                     )
                 }
                 Text(
-                    text = "حساب المستخدم",
+                    text = "حساب المستخدم والمزامنة السحابية",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Firebase Cloud Sync Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(
+                        1.dp,
+                        if (firebaseUser != null) Color(0xFF22C55E).copy(alpha = 0.5f) else Color(0xFF38BDF8).copy(alpha = 0.4f),
+                        RoundedCornerShape(12.dp)
+                    ),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF24282F))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (firebaseUser != null) Color(0xFF16A34A) else Color(0xFF0284C7))
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = if (firebaseUser != null) "المزامنة السحابية نشطة (Firebase) ✓" else "مزامنة سحابية (Firebase Firestore)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Icon(
+                            imageVector = if (firebaseUser != null) Icons.Default.CloudDone else Icons.Default.CloudSync,
+                            contentDescription = null,
+                            tint = if (firebaseUser != null) Color(0xFF4ADE80) else Color(0xFF38BDF8),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    if (firebaseUser != null) {
+                        Text(
+                            text = firebaseUser?.displayName ?: "مستخدم مسجل في السحابة",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        firebaseUser?.email?.let { email ->
+                            Text(
+                                text = email,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF9E9E9E)
+                            )
+                        }
+
+                        if (!syncMessage.isNullOrBlank()) {
+                            Text(
+                                text = syncMessage ?: "",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF86EFAC)
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = { viewModel.syncWithCloud() },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
+                                shape = RoundedCornerShape(8.dp),
+                                enabled = !isCloudSyncing,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(40.dp)
+                                    .testTag("sync_cloud_now_btn")
+                            ) {
+                                if (isCloudSyncing) {
+                                    CircularProgressIndicator(
+                                        color = Color.White,
+                                        modifier = Modifier.size(18.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(Icons.Default.Sync, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                        Text("مزامنة البيانات الآن", fontWeight = FontWeight.Bold, color = Color.White)
+                                    }
+                                }
+                            }
+
+                            OutlinedButton(
+                                onClick = { viewModel.signOutGoogle() },
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier
+                                    .height(40.dp)
+                                    .testTag("sign_out_google_btn")
+                            ) {
+                                Text("خروج", color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = "سجل الدخول بحساب Google لمزامنة بواباتك ومفضلاتك ومستنداتك سحابياً عبر Firebase Firestore والوصول إليها بأمان من أي جهاز.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFFD1D5DB)
+                        )
+
+                        if (!syncMessage.isNullOrBlank()) {
+                            Text(
+                                text = syncMessage ?: "",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFFFCA5A5)
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                activity?.let { act ->
+                                    viewModel.signInWithGoogle(act)
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(44.dp)
+                                .testTag("google_signin_sync_btn")
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CloudSync,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = "تسجيل الدخول بواسطة Google للمزامنة السحابية",
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(14.dp))

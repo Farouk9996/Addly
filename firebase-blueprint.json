@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "UserProfile": {
+      "collection": "users",
+      "path": "users/{userId}",
+      "fields": {
+        "userId": { "type": "string", "required": true },
+        "displayName": { "type": "string", "required": false },
+        "email": { "type": "string", "required": false },
+        "stayLoggedIn": { "type": "boolean", "required": false },
+        "createdAt": { "type": "timestamp", "required": false },
+        "updatedAt": { "type": "timestamp", "required": false }
+      }
+    },
+    "CloudPortal": {
+      "collection": "cloud_portals",
+      "path": "users/{userId}/cloud_portals/{portalId}",
+      "fields": {
+        "userId": { "type": "string", "required": true },
+        "title": { "type": "string", "required": true },
+        "url": { "type": "string", "required": true },
+        "institution": { "type": "string", "required": false },
+        "isFavorite": { "type": "boolean", "required": false },
+        "sortOrder": { "type": "number", "required": false },
+        "createdAt": { "type": "timestamp", "required": false },
+        "updatedAt": { "type": "timestamp", "required": false }
+      }
+    },
+    "CloudBookmark": {
+      "collection": "cloud_bookmarks",
+      "path": "users/{userId}/cloud_bookmarks/{bookmarkId}",
+      "fields": {
+        "userId": { "type": "string", "required": true },
+        "portalTitle": { "type": "string", "required": false },
+        "title": { "type": "string", "required": true },
+        "url": { "type": "string", "required": true },
+        "isFavorite": { "type": "boolean", "required": false },
+        "sortOrder": { "type": "number", "required": false },
+        "createdAt": { "type": "timestamp", "required": false },
+        "updatedAt": { "type": "timestamp", "required": false }
+      }
+    },
+    "CloudDownload": {
+      "collection": "cloud_downloads",
+      "path": "users/{userId}/cloud_downloads/{downloadId}",
+      "fields": {
+        "userId": { "type": "string", "required": true },
+        "portalTitle": { "type": "string", "required": false },
+        "fileName": { "type": "string", "required": true },
+        "fileUri": { "type": "string", "required": true },
+        "fileSizeBytes": { "type": "number", "required": false },
+        "mimeType": { "type": "string", "required": false },
+        "courseCode": { "type": "string", "required": false },
+        "downloadStatus": { "type": "string", "required": false },
+        "downloadedAt": { "type": "timestamp", "required": false }
+      }
+    }
+  }
+}

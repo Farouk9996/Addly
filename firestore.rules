@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string &&
+             data.userId == request.auth.uid &&
+             (!('displayName' in data) || data.displayName is string) &&
+             (!('email' in data) || data.email is string) &&
+             (!('stayLoggedIn' in data) || data.stayLoggedIn is bool);
+    }
+
+    function isValidPortal(data) {
+      return data.userId is string &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() > 0 &&
+             data.url is string && data.url.size() > 0 &&
+             (!('institution' in data) || data.institution is string) &&
+             (!('isFavorite' in data) || data.isFavorite is bool) &&
+             (!('sortOrder' in data) || data.sortOrder is number);
+    }
+
+    function isValidBookmark(data) {
+      return data.userId is string &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() > 0 &&
+             data.url is string && data.url.size() > 0 &&
+             (!('portalTitle' in data) || data.portalTitle is string) &&
+             (!('isFavorite' in data) || data.isFavorite is bool) &&
+             (!('sortOrder' in data) || data.sortOrder is number);
+    }
+
+    function isValidDownload(data) {
+      return data.userId is string &&
+             data.userId == request.auth.uid &&
+             data.fileName is string && data.fileName.size() > 0 &&
+             data.fileUri is string && data.fileUri.size() > 0 &&
+             (!('portalTitle' in data) || data.portalTitle is string) &&
+             (!('fileSizeBytes' in data) || data.fileSizeBytes is number) &&
+             (!('mimeType' in data) || data.mimeType is string) &&
+             (!('courseCode' in data) || data.courseCode is string) &&
+             (!('downloadStatus' in data) || data.downloadStatus is string);
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isValidUserProfile(request.resource.data);
+      allow delete: if isOwner(userId);
+
+      match /cloud_portals/{portalId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidPortal(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      match /cloud_bookmarks/{bookmarkId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidBookmark(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      match /cloud_downloads/{downloadId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidDownload(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "firestore": [
+    {
+      "database": "ai-studio-android-learnbri-bb5b367e-9b2e-4860-acc0-0a7161940e75",
+      "rules": "firestore.rules"
+    }
+  ]
+}

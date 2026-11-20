@@ -68,5 +68,7 @@ data class NotificationItem(
     val sender: String,
     val timeAgo: String,
     val isUnread: Boolean,
-    val initials: String
+    val initials: String,
+    val targetUrl: String = "https://mast-da.ufc.dz/s1/my/"
 )
+

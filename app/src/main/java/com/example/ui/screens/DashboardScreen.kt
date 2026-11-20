@@ -56,10 +56,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.ui.PortalViewModel
 
-data class MoodleCourse(
+data class MoodleCourseHub(
     val id: String,
     val title: String,
     val code: String,
@@ -67,41 +71,48 @@ data class MoodleCourse(
     val url: String
 )
 
-val SAMPLE_COURSES = listOf(
-    MoodleCourse(
-        id = "ufc_s1",
-        title = "ماستر قانون الأعمال - السداسي 1 (UFC)",
-        code = "جامعة التكوين المتواصل S1",
+val REAL_MOODLE_HUBS = listOf(
+    MoodleCourseHub(
+        id = "ufc_my_courses",
+        title = "مقرراتي الدراسية المسجلة (My Courses)",
+        code = "جامعة التكوين المتواصل - ماستر S1",
         colorHex = 0xFFF97316,
-        url = "https://mast-da.ufc.dz/s1/login/index.php"
+        url = "https://mast-da.ufc.dz/s1/my/courses.php"
     ),
-    MoodleCourse(
-        id = "ai",
-        title = "الذكاء الاصطناعي",
-        code = "الذكاء الاصطناعي",
-        colorHex = 0xFFF59E0B,
-        url = "https://ead.univ-mosta.dz/fdsp/course/view.php?id=ai"
+    MoodleCourseHub(
+        id = "ufc_catalog",
+        title = "دليل وتصنيفات المقاييس (Catalog)",
+        code = "تصفح جميع أقسام وتخصصات التكوين",
+        colorHex = 0xFF0284C7,
+        url = "https://mast-da.ufc.dz/s1/course/index.php"
     ),
-    MoodleCourse(
-        id = "oss",
-        title = "البرمجيات الحرة و المصادر المفتوحة",
-        code = "البرمجيات الحرة و المصادر المفتوحة",
+    MoodleCourseHub(
+        id = "ufc_dashboard",
+        title = "لوحة المتابعة والمخطط (Dashboard)",
+        code = "متابعة الواجبات والأنشطة القادمة",
         colorHex = 0xFF10B981,
-        url = "https://ead.univ-mosta.dz/fdsp/course/view.php?id=oss"
+        url = "https://mast-da.ufc.dz/s1/my/"
     ),
-    MoodleCourse(
-        id = "juris",
-        title = "الاجتهاد القضائي في مسائل الاحوال الشخصية",
-        code = "الاجتهاد القضائي في مسائل الاحوال الشخصية",
-        colorHex = 0xFF06B6D4,
-        url = "https://ead.univ-mosta.dz/fdsp/course/view.php?id=juris"
+    MoodleCourseHub(
+        id = "ufc_grades",
+        title = "كشف النقاط والتقييمات (Grades)",
+        code = "علامات الأعمال الموجهة والامتحانات",
+        colorHex = 0xFF8B5CF6,
+        url = "https://mast-da.ufc.dz/s1/grade/report/overview/index.php"
     ),
-    MoodleCourse(
-        id = "contracts",
-        title = "العقود التبرعية",
-        code = "قانون العقود التبرعية",
-        colorHex = 0xFF3B82F6,
-        url = "https://ead.univ-mosta.dz/fdsp/course/view.php?id=contracts"
+    MoodleCourseHub(
+        id = "ufc_news",
+        title = "منتدى الإعلانات الرسمية (Announcements)",
+        code = "بيانات الإدارة وجداول الامتحانات",
+        colorHex = 0xFFF59E0B,
+        url = "https://mast-da.ufc.dz/s1/mod/forum/index.php?id=1"
+    ),
+    MoodleCourseHub(
+        id = "fdsp_mosta",
+        title = "كلية الحقوق والعلوم السياسية (FDSP)",
+        code = "جامعة مستغانم - العلوم القانونية",
+        colorHex = 0xFFEA580C,
+        url = "https://ead.univ-mosta.dz/fdsp/course/index.php"
     )
 )
 
@@ -186,13 +197,49 @@ fun DashboardScreen(
                             OutlinedTextField(
                                 value = timelineSearch,
                                 onValueChange = { timelineSearch = it },
-                                placeholder = { Text("البحث حسب نوع النشاط أو اسمه", color = Color(0xFF757575)) },
-                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF9E9E9E)) },
+                                placeholder = { Text("بحث في مقاييس ومنصة UFC Moodle...", color = Color(0xFF757575)) },
+                                leadingIcon = {
+                                    IconButton(onClick = {
+                                        if (timelineSearch.isNotBlank()) {
+                                            viewModel.openCustomUrl(
+                                                "https://mast-da.ufc.dz/s1/course/search.php?search=${timelineSearch.trim()}",
+                                                "البحث: $timelineSearch"
+                                            )
+                                        }
+                                    }) {
+                                        Icon(Icons.Default.Search, contentDescription = "بحث", tint = Color(0xFFF97316))
+                                    }
+                                },
+                                trailingIcon = {
+                                    if (timelineSearch.isNotBlank()) {
+                                        IconButton(onClick = {
+                                            viewModel.openCustomUrl(
+                                                "https://mast-da.ufc.dz/s1/course/search.php?search=${timelineSearch.trim()}",
+                                                "البحث: $timelineSearch"
+                                            )
+                                        }) {
+                                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "انتقال للبحث", tint = Color(0xFFF97316))
+                                        }
+                                    }
+                                },
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                keyboardActions = KeyboardActions(
+                                    onSearch = {
+                                        if (timelineSearch.isNotBlank()) {
+                                            viewModel.openCustomUrl(
+                                                "https://mast-da.ufc.dz/s1/course/search.php?search=${timelineSearch.trim()}",
+                                                "البحث: $timelineSearch"
+                                            )
+                                        }
+                                    }
+                                ),
                                 singleLine = true,
                                 shape = RoundedCornerShape(8.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedContainerColor = Color(0xFF1E1E1E),
-                                    unfocusedContainerColor = Color(0xFF1E1E1E)
+                                    unfocusedContainerColor = Color(0xFF1E1E1E),
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White
                                 ),
                                 modifier = Modifier.fillMaxWidth().testTag("timeline_search_input")
                             )
@@ -201,45 +248,65 @@ fun DashboardScreen(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(Color(0xFF1E1E1E))
+                                    .clickable {
+                                        viewModel.openCustomUrl(
+                                            "https://mast-da.ufc.dz/s1/calendar/view.php?view=upcoming",
+                                            "المخطط الزمني والأنشطة القادمة"
+                                        )
+                                    }
                                     .padding(horizontal = 12.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(Icons.Default.FilterList, contentDescription = null, tint = Color(0xFF9E9E9E), modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.FilterList, contentDescription = null, tint = Color(0xFFF97316), modifier = Modifier.size(16.dp))
                                 Text(
-                                    text = "الثلاثون يوماً القادمة",
+                                    text = "الثلاثون يوماً القادمة (عرض التكليفات في المنصة)",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
 
-                            // Empty activities illustration
+                            // Active activities link button
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 20.dp),
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFF1E1E1E))
+                                    .clickable {
+                                        viewModel.openCustomUrl(
+                                            "https://mast-da.ufc.dz/s1/calendar/view.php?view=upcoming",
+                                            "التكليفات والواجبات المطلوبة"
+                                        )
+                                    }
+                                    .padding(vertical = 16.dp, horizontal = 12.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(60.dp)
+                                        .size(48.dp)
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(Color(0xFF333333)),
+                                        .background(Color(0xFFF97316).copy(alpha = 0.2f)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.CalendarToday,
                                         contentDescription = null,
-                                        tint = Color(0xFF9E9E9E),
-                                        modifier = Modifier.size(32.dp)
+                                        tint = Color(0xFFF97316),
+                                        modifier = Modifier.size(28.dp)
                                     )
                                 }
                                 Text(
-                                    text = "لا نشاطات تتطلب إجراءات",
+                                    text = "فتح المخطط الزمني والتكليفات المباشرة على UFC",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Medium
+                                    color = Color(0xFFFED7AA),
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "انقر هنا لعرض الواجبات والمواعيد المقررة في حسابك الجامعي",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color(0xFF9E9E9E)
                                 )
                             }
                         }
@@ -272,12 +339,12 @@ fun DashboardScreen(
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            items(SAMPLE_COURSES) { course ->
+                            items(REAL_MOODLE_HUBS) { hub ->
                                 ElevatedCard(
                                     modifier = Modifier
-                                        .width(220.dp)
+                                        .width(230.dp)
                                         .clickable {
-                                            viewModel.openCustomUrl(course.url, course.title)
+                                            viewModel.openCustomUrl(hub.url, hub.title)
                                         },
                                     shape = RoundedCornerShape(14.dp),
                                     colors = CardDefaults.elevatedCardColors(
@@ -289,28 +356,28 @@ fun DashboardScreen(
                                         Box(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .height(70.dp)
-                                                .background(Color(course.colorHex)),
+                                                .height(75.dp)
+                                                .background(Color(hub.colorHex)),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.School,
                                                 contentDescription = null,
-                                                tint = Color.White.copy(alpha = 0.8f),
-                                                modifier = Modifier.size(36.dp)
+                                                tint = Color.White.copy(alpha = 0.9f),
+                                                modifier = Modifier.size(38.dp)
                                             )
                                         }
 
                                         Column(modifier = Modifier.padding(12.dp)) {
                                             Text(
-                                                text = course.title,
+                                                text = hub.title,
                                                 style = MaterialTheme.typography.titleSmall,
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color.White,
                                                 maxLines = 2,
                                                 overflow = TextOverflow.Ellipsis
                                             )
-                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Spacer(modifier = Modifier.height(6.dp))
                                             Box(
                                                 modifier = Modifier
                                                     .clip(RoundedCornerShape(6.dp))
@@ -318,7 +385,7 @@ fun DashboardScreen(
                                                     .padding(horizontal = 8.dp, vertical = 4.dp)
                                             ) {
                                                 Text(
-                                                    text = course.code,
+                                                    text = hub.code,
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = Color(0xFFFDE68A),
                                                     maxLines = 1,

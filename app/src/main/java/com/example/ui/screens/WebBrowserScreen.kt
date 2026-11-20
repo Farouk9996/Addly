@@ -63,6 +63,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import com.example.data.model.PortalEntity
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -512,6 +513,16 @@ fun WebBrowserScreen(
                         cookieManager.setAcceptCookie(true)
                         cookieManager.setAcceptThirdPartyCookies(this@apply, true)
 
+                        addJavascriptInterface(object {
+                            @android.webkit.JavascriptInterface
+                            fun onCredentialsSubmitted(username: String, password: String) {
+                                if (username.isNotBlank()) {
+                                    viewModel.updateCredentials(username, password)
+                                    viewModel.flushCookies()
+                                }
+                            }
+                        }, "AndroidLoginBridge")
+
                         webViewClient = object : WebViewClient() {
                             override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
                                 try {
@@ -567,7 +578,10 @@ fun WebBrowserScreen(
                                     val jsLogin = """
                                     (function() {
                                         var rem = document.querySelector('input[name="rememberusername"], #rememberusername');
-                                        if (rem) { rem.checked = true; }
+                                        if (rem) {
+                                            rem.checked = true;
+                                            rem.dispatchEvent(new Event('change', { bubbles: true }));
+                                        }
                                         if ($autoFill && '$uName'.length > 0) {
                                             var u = document.querySelector('input[name="username"], input[id="username"], input[name="login"], input[id="login"], input[name="login_username"]');
                                             if (u && !u.value) {
@@ -583,6 +597,19 @@ fun WebBrowserScreen(
                                                 p.dispatchEvent(new Event('input', { bubbles: true }));
                                                 p.dispatchEvent(new Event('change', { bubbles: true }));
                                             }
+                                        }
+                                        var form = document.querySelector('form#login, form[action*="login"]');
+                                        if (form && !form.hasAttribute('data-persisted')) {
+                                            form.setAttribute('data-persisted', 'true');
+                                            form.addEventListener('submit', function() {
+                                                var r = document.querySelector('input[name="rememberusername"], #rememberusername');
+                                                if (r) r.checked = true;
+                                                var uIn = document.querySelector('input[name="username"], input[id="username"], input[name="login"]');
+                                                var pIn = document.querySelector('input[name="password"], input[id="password"]');
+                                                if (uIn && window.AndroidLoginBridge) {
+                                                    window.AndroidLoginBridge.onCredentialsSubmitted(uIn.value || '', pIn ? pIn.value || '' : '');
+                                                }
+                                            });
                                         }
                                     })();
                                     """.trimIndent()
@@ -714,9 +741,10 @@ fun WebBrowserScreen(
 
                 IconButton(
                     onClick = {
-                        browserState.activePortal?.let {
-                            viewModel.openPortal(it)
-                        } ?: run {
+                        val portal = browserState.activePortal
+                        if (portal != null) {
+                            viewModel.openPortal(portal)
+                        } else {
                             webViewInstance?.loadUrl(browserState.currentUrl)
                         }
                     },

@@ -79,6 +79,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        try {
+            android.webkit.CookieManager.getInstance().setAcceptCookie(true)
+        } catch (_: Exception) {}
+
         setContent {
             MyApplicationTheme(darkTheme = true) {
                 val currentScreen by viewModel.currentScreen.collectAsState()
@@ -183,6 +187,7 @@ class MainActivity : ComponentActivity() {
 
                     if (showAccountSheet) {
                         MoodleAccountSheet(
+                            viewModel = viewModel,
                             onDismiss = { viewModel.toggleAccountSheet(false) },
                             onOpenUrl = { url, title ->
                                 viewModel.openCustomUrl(url, title)
